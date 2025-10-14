@@ -154,7 +154,7 @@ def is_cyclic_lon(lon, bounds=None, atol: float = 1e-6) -> bool:
     """
     Heuristic to detect cyclic longitudes (global wrap at 360 degrees).
     True if either:
-      - differences show a large negative jump (e.g., ~360→0), or
+      - differences show a large negative jump (e.g., ~360->0), or
       - last bound upper ≈ first bound lower + 360 (if bounds provided).
     """
     l = np.asarray(lon, dtype=float)
