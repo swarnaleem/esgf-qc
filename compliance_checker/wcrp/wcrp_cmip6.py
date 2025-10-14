@@ -32,6 +32,14 @@ from ..checks.consistency_checks.check_drs_consistency import check_attributes_m
 from ..checks.consistency_checks.check_attributes_match_filename import check_filename_vs_global_attrs, _parse_filename_components
 from ..checks.time_checks.check_time_bounds import check_time_bounds
 from ..checks.time_checks.check_time_range_vs_filename import *
+from ..checks.variable_checks.check_lat_dtype_float import check_lat_dtype_float
+from ..checks.variable_checks.check_lat_core_values import check_lat_core_values
+from ..checks.variable_checks.check_lat_within_bounds import check_lat_within_bounds
+from ..checks.variable_checks.check_lat_attrs_and_bounds import check_lat_attrs_and_bounds
+from ..checks.variable_checks.check_lon_dtype_float import check_lon_dtype_float
+from ..checks.variable_checks.check_lon_core_values import check_lon_core_values
+from ..checks.variable_checks.check_lon_within_bounds import check_lon_within_bounds
+from ..checks.variable_checks.check_lon_attrs_and_bounds import check_lon_attrs_and_bounds
 
 # --- Esgvoc universe import---
 try:
@@ -515,5 +523,41 @@ class Cmip6ProjectCheck(WCRPBaseCheck):
                 severity=self.get_severity(check_config.get('severity')),
                 project_id=project_id
             ))
+
+        return results
+    
+    def check_Coordinate_LatLon(self, ds):
+        """
+        Runs the CMIP-style latitude/longitude coordinate checks.
+        Controlled by the optional 'coordinate_checks' section in the TOML.
+        If not present, defaults to MEDIUM severity.
+        """
+        results = []
+
+        # read severity (optional)
+        cfg = self.config.get("coordinate_checks", {}) if getattr(self, "config", None) else {}
+        severity = self.get_severity(cfg.get("severity")) if cfg else BaseCheck.MEDIUM
+
+        # Latitude
+        try:
+            results.extend(check_lat_dtype_float(ds, "lat", severity))
+            results.extend(check_lat_core_values(ds, "lat", severity))
+            results.extend(check_lat_within_bounds(ds, "lat", severity))
+            results.extend(check_lat_attrs_and_bounds(ds, "lat", severity))
+        except Exception as e:
+            ctx = TestCtx(severity, "Latitude checks")
+            ctx.add_failure(f"Unexpected error while running latitude checks: {e}")
+            results.append(ctx.to_result())
+
+        # Longitude
+        try:
+            results.extend(check_lon_dtype_float(ds, "lon", severity))
+            results.extend(check_lon_core_values(ds, "lon", severity))
+            results.extend(check_lon_within_bounds(ds, "lon", severity))
+            results.extend(check_lon_attrs_and_bounds(ds, "lon", severity))
+        except Exception as e:
+            ctx = TestCtx(severity, "Longitude checks")
+            ctx.add_failure(f"Unexpected error while running longitude checks: {e}")
+            results.append(ctx.to_result())
 
         return results
